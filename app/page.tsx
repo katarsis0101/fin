@@ -27,25 +27,20 @@ export default function HomePage() {
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => {
-    if (user && typeof window !== 'undefined') {
-      const done = localStorage.getItem('fin_onboarding_done')
-      if (!done) setShowOnboarding(true)
+    if (!loading && user && typeof window !== 'undefined') {
+      if (!localStorage.getItem('fin_onboarding_done')) {
+        setShowOnboarding(true)
+      }
     }
-  }, [user])
+  }, [loading, user])
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 32, height: 32, border: '2px solid #10b981', borderTopColor: 'transparent', borderRadius: '50%' }}
-        className="animate-spin" />
+    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 32, height: 32, border: '2px solid var(--accent)', borderTopColor: 'transparent', borderRadius: '50%' }} className="animate-spin" />
     </div>
   )
 
-  if (showOnboarding) return (
-    <Onboarding onComplete={() => {
-      setShowOnboarding(false)
-      window.location.reload()
-    }} />
-  )
+  if (showOnboarding) return <Onboarding onComplete={() => setShowOnboarding(false)} />
 
   function openSheet(type: TransactionType) {
     calc.evaluate()
@@ -72,29 +67,27 @@ export default function HomePage() {
   return (
     <div className="app-shell">
       <ServiceWorkerRegistration />
-      <div className="app-content flex flex-col">
+      <div className="app-content" style={{ display: 'flex', flexDirection: 'column' }}>
 
         {/* Display */}
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 min-h-[200px]">
-          <div className="text-right w-full">
-            <div className="text-5xl font-light text-white tracking-tight overflow-hidden text-ellipsis whitespace-nowrap">
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 24px', minHeight: 200 }}>
+          <div style={{ textAlign: 'right', width: '100%' }}>
+            <div style={{ fontSize: '3rem', fontWeight: 300, color: '#fff', letterSpacing: '-0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {parseFloat(calc.display).toLocaleString('uk-UA', { maximumFractionDigits: 8 })}
             </div>
-            <div className="text-sm mt-1" style={{ color: '#444' }}>₴ UAH</div>
+            <div style={{ color: 'var(--text-tertiary)', fontSize: '0.875rem', marginTop: 4 }}>₴ UAH</div>
           </div>
         </div>
 
         {/* Keypad */}
-        <div className="px-3 pb-4">
+        <div style={{ padding: '0 12px 16px' }}>
           {KEYPAD.map((row, ri) => (
-            <div key={ri} className="grid grid-cols-4 gap-2 mb-2">
+            <div key={ri} style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, marginBottom: 8 }}>
               {row.map((key, ki) => {
                 if (ri === 4 && ki === 0) {
                   return (
-                    <button key="0-wide"
-                      onClick={() => handleKey('0')}
-                      className="calc-btn col-span-2"
-                      style={{ background: '#1c1c1e', color: '#fff' }}>
+                    <button key="0-wide" onClick={() => handleKey('0')}
+                      className="calc-btn" style={{ gridColumn: 'span 2', background: 'var(--bg-raised)', color: '#fff' }}>
                       0
                     </button>
                   )
@@ -102,22 +95,20 @@ export default function HomePage() {
                 if (ri === 4 && ki === 1) return null
 
                 const isActiveOp = isOp(key) && calc.op === (key === '−' ? '-' : key)
-                const bg = isActiveOp ? '#10b981'
-                  : isOp(key) ? '#2a2a2a'
-                  : isAction(key) ? '#2a2a2a'
-                  : key === '⌫' ? '#2a2a2a'
-                  : '#1c1c1e'
+                const bg = isActiveOp ? 'var(--accent)'
+                  : isOp(key) ? 'var(--bg-overlay)'
+                  : isAction(key) ? 'var(--bg-overlay)'
+                  : key === '⌫' ? 'var(--bg-overlay)'
+                  : 'var(--bg-raised)'
                 const color = isActiveOp ? '#fff'
-                  : isOp(key) ? '#10b981'
-                  : isAction(key) ? '#aaa'
-                  : key === '⌫' ? '#aaa'
+                  : isOp(key) ? 'var(--accent)'
+                  : isAction(key) ? 'var(--text-secondary)'
+                  : key === '⌫' ? 'var(--text-secondary)'
                   : '#fff'
 
                 return (
-                  <button key={`${ri}-${ki}`}
-                    onClick={() => handleKey(key)}
-                    className="calc-btn"
-                    style={{ background: bg, color }}>
+                  <button key={`${ri}-${ki}`} onClick={() => handleKey(key)}
+                    className="calc-btn" style={{ background: bg, color }}>
                     {key === '⌫' ? <Delete size={20} /> : key}
                   </button>
                 )
@@ -125,16 +116,13 @@ export default function HomePage() {
             </div>
           ))}
 
-          {/* Action buttons */}
-          <div className="grid grid-cols-2 gap-3 mt-3">
-            <button
-              onClick={() => openSheet('expense')}
-              style={{ padding: '16px', borderRadius: 16, background: '#ef4444', color: '#fff', fontWeight: 700, fontSize: '1rem', border: 'none', cursor: 'pointer' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+            <button onClick={() => openSheet('expense')}
+              style={{ padding: '16px', borderRadius: 'var(--radius-lg)', background: 'var(--expense-color)', color: '#fff', fontWeight: 700, fontSize: '1rem', border: 'none', cursor: 'pointer' }}>
               − Витрата
             </button>
-            <button
-              onClick={() => openSheet('income')}
-              style={{ padding: '16px', borderRadius: 16, background: '#10b981', color: '#000', fontWeight: 700, fontSize: '1rem', border: 'none', cursor: 'pointer' }}>
+            <button onClick={() => openSheet('income')}
+              style={{ padding: '16px', borderRadius: 'var(--radius-lg)', background: 'var(--accent)', color: '#000', fontWeight: 700, fontSize: '1rem', border: 'none', cursor: 'pointer' }}>
               + Дохід
             </button>
           </div>

@@ -8,36 +8,50 @@ import SummaryCards from '@/components/analytics/SummaryCards'
 import GroupingSelector from '@/components/analytics/GroupingSelector'
 import MainChart from '@/components/analytics/MainChart'
 import BreakdownTable from '@/components/analytics/BreakdownTable'
-import { getRangeForPreset, getPrevRangeForPreset, buildChartData } from '@/lib/analytics'
+import { getRangeForPreset, getPrevRangeForPreset, buildChartData, getDefaultGroupBy } from '@/lib/analytics'
 import type { Preset, GroupBy } from '@/lib/analytics'
 import { toISODate } from '@/lib/format'
+import { loadAnalyticsState, saveAnalyticsState } from '@/lib/analyticsState'
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const [preset, setPreset] = useState<Preset>('thisMonth')
-  const [groupBy, setGroupBy] = useState<GroupBy>('day')
+  const supabase = createClient()
+
+  const init = typeof window !== 'undefined' ? loadAnalyticsState() : { preset: 'thisMonth' as Preset, groupBy: 'day' as GroupBy }
+  const [preset, setPreset] = useState<Preset>(init.preset)
+  const [groupBy, setGroupBy] = useState<GroupBy>(init.groupBy)
   const [customFrom, setCustomFrom] = useState(toISODate(new Date()))
   const [customTo, setCustomTo] = useState(toISODate(new Date()))
   const [transactions, setTransactions] = useState<any[]>([])
   const [prevTransactions, setPrevTransactions] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
-  const supabase = createClient()
+
+  function handlePreset(p: Preset) {
+    setPreset(p)
+    const { from, to } = getRangeForPreset(p, new Date(customFrom), new Date(customTo))
+    const auto = getDefaultGroupBy(from, to)
+    setGroupBy(auto)
+    saveAnalyticsState({ preset: p, groupBy: auto })
+  }
+
+  function handleGroupBy(g: GroupBy) {
+    setGroupBy(g)
+    saveAnalyticsState({ groupBy: g })
+  }
 
   useEffect(() => {
     if (!user) return
     const { from, to } = getRangeForPreset(preset, new Date(customFrom), new Date(customTo))
 
-    let query = supabase.from('transactions').select('*').eq('user_id', user.id)
-    if (from) query = query.gte('created_at', from.toISOString())
-    if (to)   query = query.lte('created_at', to.toISOString())
-    query.order('created_at', { ascending: true })
+    let q = supabase.from('transactions').select('*').eq('user_id', user.id)
+    if (from) q = q.gte('created_at', from.toISOString())
+    if (to)   q = q.lte('created_at', to.toISOString())
+    q.order('created_at', { ascending: true })
       .then(({ data }) => setTransactions(data || []))
 
     const prevRange = getPrevRangeForPreset(preset, new Date(customFrom), new Date(customTo))
     if (prevRange) {
-      supabase.from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
+      supabase.from('transactions').select('*').eq('user_id', user.id)
         .gte('created_at', prevRange.from.toISOString())
         .lte('created_at', prevRange.to.toISOString())
         .then(({ data }) => setPrevTransactions(data || []))
@@ -49,16 +63,15 @@ export default function DashboardPage() {
       .then(({ data }) => setCategories(data || []))
   }, [user, preset, customFrom, customTo])
 
-  const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+  const income  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
-  const prevIncome = prevTransactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+  const prevIncome  = prevTransactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const prevExpense = prevTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
   const showDelta = !['allTime', 'custom'].includes(preset)
 
   const { from, to } = getRangeForPreset(preset, new Date(customFrom), new Date(customTo))
   const chartData = buildChartData(transactions, from, to, groupBy)
 
-  const catMap = Object.fromEntries(categories.map(c => [c.id, c]))
   function buildBreakdown(type: 'income' | 'expense') {
     const txs = transactions.filter(t => t.type === type)
     const total = txs.reduce((s, t) => s + Number(t.amount), 0)
@@ -69,23 +82,21 @@ export default function DashboardPage() {
       byCategory[key].amount += Number(t.amount)
       byCategory[key].count++
     })
-    return Object.entries(byCategory)
-      .map(([category, { amount, count }]) => {
-        const cat = categories.find(c => c.name === category)
-        return { category, icon: cat?.icon, amount, count, percent: total ? (amount / total) * 100 : 0 }
-      })
-      .sort((a, b) => b.amount - a.amount)
+    return Object.entries(byCategory).map(([category, { amount, count }]) => {
+      const cat = categories.find((c: any) => c.name === category)
+      return { category, icon: cat?.icon, amount, count, percent: total ? (amount / total) * 100 : 0 }
+    }).sort((a, b) => b.amount - a.amount)
   }
 
   return (
     <div className="app-shell">
       <div className="app-content">
-        <div className="px-4 pt-4 pb-3">
-          <h1 style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 700 }}>Аналітика</h1>
+        <div style={{ padding: '16px 16px 12px' }}>
+          <h1 style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em' }}>Аналітика</h1>
         </div>
 
         <DateRangePicker
-          preset={preset} onPreset={setPreset}
+          preset={preset} onPreset={handlePreset}
           customFrom={customFrom} customTo={customTo}
           onCustomFrom={setCustomFrom} onCustomTo={setCustomTo}
         />
@@ -96,7 +107,7 @@ export default function DashboardPage() {
           showDelta={showDelta}
         />
 
-        <GroupingSelector value={groupBy} onChange={setGroupBy} />
+        <GroupingSelector value={groupBy} onChange={handleGroupBy} />
 
         <MainChart data={chartData} />
 

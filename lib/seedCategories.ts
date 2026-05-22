@@ -1,7 +1,7 @@
 import { createClient } from './supabase/client'
 import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES } from './categories'
 
-const SEED_LOCK_KEY = 'fin_categories_seeded_v2'
+const SEED_LOCK_KEY = 'fin_categories_seeded_v3'
 
 export async function seedCategoriesIfNeeded(userId: string) {
   if (typeof window === 'undefined') return
@@ -11,10 +11,7 @@ export async function seedCategoriesIfNeeded(userId: string) {
 
   const supabase = createClient()
   const { data: existing } = await supabase
-    .from('categories')
-    .select('id')
-    .eq('user_id', userId)
-    .limit(1)
+    .from('categories').select('id').eq('user_id', userId).limit(1)
 
   if (existing && existing.length > 0) return
 

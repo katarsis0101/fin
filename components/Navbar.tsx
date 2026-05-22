@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, BarChart2, ArrowLeftRight, Settings } from 'lucide-react'
 
-const tabs = [
+const TABS = [
   { href: '/', icon: Home, label: 'Головна' },
   { href: '/dashboard', icon: BarChart2, label: 'Аналітика' },
   { href: '/transactions', icon: ArrowLeftRight, label: 'Рух коштів' },
@@ -12,18 +12,21 @@ const tabs = [
 
 export default function Navbar() {
   const path = usePathname()
-
   return (
     <nav className="bottom-nav">
-      {tabs.map(({ href, icon: Icon, label }) => {
+      {TABS.map(({ href, icon: Icon, label }) => {
         const active = path === href
         return (
           <Link key={href} href={href}
-            className="flex flex-col items-center gap-0.5 px-4 py-1 transition-colors"
-            style={{ color: active ? '#10b981' : '#555' }}
-          >
-            <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
-            <span className="text-[10px] font-medium">{label}</span>
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: 2, padding: '6px 12px', borderRadius: 16, minHeight: 'auto',
+              color: active ? 'var(--accent)' : 'var(--text-muted)',
+              background: active ? 'var(--accent-dim)' : 'transparent',
+              textDecoration: 'none', transition: 'all 0.15s',
+            }}>
+            <Icon size={20} strokeWidth={active ? 2.5 : 1.8} />
+            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.04em' }}>{label}</span>
           </Link>
         )
       })}

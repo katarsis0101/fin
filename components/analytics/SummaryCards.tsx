@@ -10,78 +10,65 @@ interface Props {
   showDelta?: boolean
 }
 
-function Delta({ curr, prev }: { curr: number; prev: number }) {
+function Delta({ curr, prev, invert }: { curr: number; prev: number; invert?: boolean }) {
   if (!prev) return null
   const pct = ((curr - prev) / prev) * 100
-  const up = pct >= 0
+  const positive = invert ? pct <= 0 : pct >= 0
   return (
-    <span style={{ fontSize: '0.75rem', fontWeight: 500, color: up ? '#10b981' : '#ef4444' }}>
-      {up ? '+' : ''}{pct.toFixed(1)}%
+    <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: positive ? 'var(--income-color)' : 'var(--expense-color)' }}>
+      {pct >= 0 ? '↑' : '↓'} {Math.abs(pct).toFixed(1)}%
     </span>
   )
 }
 
-const cardStyle: React.CSSProperties = {
-  background: '#1a1a1a',
-  borderRadius: 16,
-  padding: '12px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 2,
+const card: React.CSSProperties = {
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  padding: '12px 14px',
+  display: 'flex', flexDirection: 'column', gap: 2,
 }
 
 export default function SummaryCards({ income, expense, prevIncome, prevExpense, showDelta }: Props) {
   const balance = income - expense
   const margin = income > 0 ? ((income - expense) / income) * 100 : null
-
-  const marginColor =
-    margin === null  ? '#555' :
-    margin >= 50     ? '#10b981' :
-    margin >= 20     ? '#f59e0b' :
-    margin >= 0      ? '#f97316' :
-                       '#ef4444'
+  const marginColor = margin === null ? 'var(--text-muted)' : margin >= 50 ? 'var(--income-color)' : margin >= 20 ? '#f59e0b' : margin >= 0 ? '#f97316' : 'var(--expense-color)'
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: '0 16px', marginBottom: 12 }}>
-      <div style={cardStyle}>
+      <div style={card}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-          <TrendingUp size={12} color="#10b981" />
-          <span style={{ fontSize: '0.625rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Дохід</span>
+          <TrendingUp size={11} color="var(--income-color)" />
+          <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Дохід</span>
         </div>
-        <div style={{ color: '#10b981', fontWeight: 700, fontSize: '0.9rem' }}>{formatUAH(income)}</div>
+        <div style={{ color: 'var(--income-color)', fontWeight: 700, fontSize: '0.9rem' }}>{formatUAH(income)}</div>
         {showDelta && prevIncome !== undefined && <Delta curr={income} prev={prevIncome} />}
       </div>
 
-      <div style={cardStyle}>
+      <div style={card}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-          <TrendingDown size={12} color="#ef4444" />
-          <span style={{ fontSize: '0.625rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Витрати</span>
+          <TrendingDown size={11} color="var(--expense-color)" />
+          <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Витрати</span>
         </div>
-        <div style={{ color: '#ef4444', fontWeight: 700, fontSize: '0.9rem' }}>{formatUAH(expense)}</div>
-        {showDelta && prevExpense !== undefined && <Delta curr={expense} prev={prevExpense} />}
+        <div style={{ color: 'var(--expense-color)', fontWeight: 700, fontSize: '0.9rem' }}>{formatUAH(expense)}</div>
+        {showDelta && prevExpense !== undefined && <Delta curr={expense} prev={prevExpense} invert />}
       </div>
 
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-          <span style={{ fontSize: '0.625rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Баланс</span>
-        </div>
-        <div style={{ color: balance >= 0 ? '#fff' : '#ef4444', fontWeight: 700, fontSize: '0.9rem' }}>
-          {formatUAH(balance)}
-        </div>
+      <div style={card}>
+        <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, marginBottom: 2 }}>Баланс</span>
+        <div style={{ color: balance >= 0 ? '#fff' : 'var(--expense-color)', fontWeight: 700, fontSize: '0.9rem' }}>{formatUAH(balance)}</div>
       </div>
 
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-          <span style={{ fontSize: '0.625rem', color: '#666', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Маржа</span>
-        </div>
+      <div style={card}>
+        <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600, marginBottom: 2 }}>Маржа</span>
         {margin === null ? (
-          <span style={{ color: '#555', fontWeight: 700, fontSize: '0.9rem' }}>—</span>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.9rem' }}>—</span>
         ) : (
           <span style={{ color: marginColor, fontWeight: 700, fontSize: '0.9rem' }}>
             {margin >= 0 ? '+' : ''}{margin.toFixed(1)}%
           </span>
         )}
-        <span style={{ fontSize: '0.6875rem', color: '#555' }}>від доходу</span>
+        <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)' }}>від доходу</span>
       </div>
     </div>
   )

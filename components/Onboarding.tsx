@@ -1,147 +1,238 @@
 'use client'
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { applyOnboardingResults } from '@/lib/apply-onboarding'
-import type { ActivityType } from '@/lib/onboarding-categories'
+import { useState, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { applyColorScheme, type ColorScheme } from './ColorSchemeProvider'
 
-const ACTIVITIES: { id: ActivityType; label: string; icon: string }[] = [
-  { id: 'lawyer',       label: 'Юрист / Адвокат',   icon: '⚖️' },
-  { id: 'it',           label: 'IT / Фриланс',       icon: '💻' },
-  { id: 'beauty',       label: "Б'юті-бізнес",       icon: '💅' },
-  { id: 'accountant',   label: 'Бухгалтер',          icon: '🧮' },
-  { id: 'trade',        label: 'Торгівля',           icon: '🛒' },
-  { id: 'entrepreneur', label: 'Підприємець',        icon: '💼' },
-  { id: 'medical',      label: 'Медицина',           icon: '🏥' },
-  { id: 'realestate',   label: 'Нерухомість',        icon: '🏠' },
-  { id: 'personal',     label: 'Особисті фінанси',   icon: '👤' },
+const SLIDES = [
+  {
+    id: 1, visual: 'logo',
+    title: 'Ласкаво просимо до Fin',
+    subtitle: 'Ваш особистий фінансовий трекер.\nВносьте доходи, контролюйте витрати\nта аналізуйте свої фінанси.',
+    hint: null,
+    isColorPicker: false,
+    cta: null,
+  },
+  {
+    id: 2, visual: 'keypad',
+    title: 'Вносьте транзакції миттєво',
+    subtitle: 'Введіть суму на клавіатурі,\nоберіть категорію та збережіть.\nВсі суми в гривні (₴).',
+    hint: '💡 Підтримує вирази: 500 + 250 =',
+    isColorPicker: false,
+    cta: null,
+  },
+  {
+    id: 3, visual: 'income_expense',
+    title: 'Доходи та витрати',
+    subtitle: 'Кожна транзакція — або дохід (зелений)\nабо витрата (червоний).\nДодавайте коментарі.',
+    hint: null,
+    isColorPicker: false,
+    cta: null,
+  },
+  {
+    id: 4, visual: 'taxes',
+    title: 'Калькулятор податків',
+    subtitle: 'При додаванні доходу оберіть\nподатковий профіль (ФОП, ПДФО, ВЗ).\nFin автоматично запише витрати.',
+    hint: '💡 Налаштуйте один раз — застосовується завжди',
+    isColorPicker: false,
+    cta: null,
+  },
+  {
+    id: 5, visual: 'analytics',
+    title: 'Потужна аналітика',
+    subtitle: 'Відстежуйте тренди по днях,\nтижнях, місяцях та роках.\nПорівнюйте з попередніми періодами.',
+    hint: null,
+    isColorPicker: false,
+    cta: null,
+  },
+  {
+    id: 6, visual: 'scheme',
+    title: 'Оберіть колірну схему',
+    subtitle: 'Персоналізуйте додаток під себе.',
+    hint: null,
+    isColorPicker: true,
+    cta: null,
+  },
+  {
+    id: 7, visual: 'ready',
+    title: 'Все готово!',
+    subtitle: 'Почніть з вашої першої транзакції.\nFin допоможе тримати фінанси\nпід контролем.',
+    hint: null,
+    isColorPicker: false,
+    cta: 'Розпочати →',
+  },
 ]
 
-interface Props {
-  onComplete: () => void
+const SCHEMES: { key: ColorScheme; label: string; color: string }[] = [
+  { key: 'emerald', label: 'Смарагд', color: '#10b981' },
+  { key: 'blue',    label: 'Синій',   color: '#3b82f6' },
+  { key: 'violet',  label: 'Фіолет',  color: '#8b5cf6' },
+  { key: 'rose',    label: 'Рожевий', color: '#f43f5e' },
+  { key: 'amber',   label: 'Бурштин', color: '#f59e0b' },
+]
+
+function SlideVisual({ visual }: { visual: string }) {
+  switch (visual) {
+    case 'logo':
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4 }}>
+            {[0.35, 0.5, 0.75, 1].map((h, i) => (
+              <div key={i} style={{
+                width: 14, height: h * 52, borderRadius: 4,
+                background: i >= 2 ? 'var(--accent)' : 'var(--bg-raised)',
+              }} />
+            ))}
+          </div>
+          <span style={{ fontSize: '2rem', fontWeight: 700, letterSpacing: '-0.04em' }}>Fin</span>
+        </div>
+      )
+    case 'keypad':
+      return (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, width: 160 }}>
+          {['7','8','9','4','5','6','1','2','3','0','.','⌫'].map(k => (
+            <div key={k} style={{
+              height: 36, background: 'var(--bg-raised)', borderRadius: 8, border: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)',
+            }}>{k}</div>
+          ))}
+        </div>
+      )
+    case 'income_expense':
+      return (
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ background: 'var(--income-dim)', border: '1px solid var(--income-color)', borderRadius: 12, padding: '10px 20px', color: 'var(--income-color)', fontWeight: 600 }}>+ Дохід</div>
+          <div style={{ background: 'var(--expense-dim)', border: '1px solid var(--expense-color)', borderRadius: 12, padding: '10px 20px', color: 'var(--expense-color)', fontWeight: 600 }}>− Витрата</div>
+        </div>
+      )
+    case 'taxes':
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: 180 }}>
+          {['ПДФО 18%', 'ВЗ 5%', 'ЄП 5%', 'ЄСВ фікс.'].map(t => (
+            <div key={t} style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--bg-raised)', borderRadius: 8, padding: '8px 12px', fontSize: '0.8125rem' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>{t}</span>
+              <span style={{ color: 'var(--accent)' }}>✓</span>
+            </div>
+          ))}
+        </div>
+      )
+    case 'analytics':
+      return (
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 64 }}>
+          {[30, 50, 40, 70, 55, 80, 65].map((h, i) => (
+            <div key={i} style={{
+              width: 14, height: h, borderRadius: '3px 3px 0 0',
+              background: i === 5 ? 'var(--accent)' : 'var(--bg-raised)',
+              border: `1px solid ${i === 5 ? 'var(--accent)' : 'var(--border)'}`,
+            }} />
+          ))}
+        </div>
+      )
+    case 'ready':
+      return (
+        <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--accent-dim)', border: '2px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>✓</div>
+      )
+    default:
+      return <div style={{ width: 80, height: 80, background: 'var(--bg-raised)', borderRadius: 12 }} />
+  }
 }
 
-export default function Onboarding({ onComplete }: Props) {
-  const [slide, setSlide] = useState(0)
-  const [selectedActivity, setSelectedActivity] = useState<ActivityType | null>(null)
-  const [isApplying, setIsApplying] = useState(false)
-  const [applyText, setApplyText] = useState('')
-  const supabase = createClient()
+export default function Onboarding({ onComplete }: { onComplete: () => void }) {
+  const [current, setCurrent] = useState(0)
+  const [direction, setDirection] = useState(1)
+  const [selectedScheme, setSelectedScheme] = useState<ColorScheme>('emerald')
+  const touchStart = useRef(0)
 
-  const handleFinish = async () => {
-    setIsApplying(true)
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user && selectedActivity) {
-        setApplyText('Налаштовуємо категорії...')
-        await applyOnboardingResults(supabase, user.id, selectedActivity)
-        setApplyText('Зберігаємо налаштування...')
-        await new Promise(r => setTimeout(r, 400))
-        setApplyText('Готово! Завантажуємо...')
-        await new Promise(r => setTimeout(r, 300))
-      }
-      localStorage.setItem('fin_onboarding_done', '1')
-      onComplete()
-    } catch (err) {
-      console.error('Onboarding error:', err)
-      localStorage.setItem('fin_onboarding_done', '1')
-      setIsApplying(false)
-      onComplete()
-    }
+  const slide = SLIDES[current]
+  const isLast = current === SLIDES.length - 1
+
+  function goNext() { setDirection(1); setCurrent(c => Math.min(c + 1, SLIDES.length - 1)) }
+  function goPrev() { setDirection(-1); setCurrent(c => Math.max(c - 1, 0)) }
+  function finish() {
+    applyColorScheme(selectedScheme)
+    localStorage.setItem('fin_onboarding_done', '1')
+    onComplete()
   }
 
-  if (isApplying) {
-    return (
-      <div style={{
-        position: 'fixed', inset: 0, background: '#0a0a0a', zIndex: 100,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', gap: 16,
-      }}>
-        <div style={{
-          width: 40, height: 40, border: '2px solid #10b981',
-          borderTopColor: 'transparent', borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-        }} />
-        <p style={{ color: '#888', fontSize: '0.875rem' }}>{applyText}</p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
+  const variants = {
+    enter: (d: number) => ({ x: d > 0 ? '60%' : '-60%', opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (d: number) => ({ x: d > 0 ? '-60%' : '60%', opacity: 0 }),
   }
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: '#0a0a0a', zIndex: 100,
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', padding: '24px',
-    }}>
-      {slide === 0 && (
-        <div style={{ textAlign: 'center', width: '100%', maxWidth: 400 }}>
-          <div style={{ fontSize: '3rem', marginBottom: 16 }}>💰</div>
-          <h1 style={{ color: '#fff', fontSize: '1.75rem', fontWeight: 700, marginBottom: 8 }}>
-            Ласкаво просимо до Fin
-          </h1>
-          <p style={{ color: '#888', fontSize: '0.9375rem', marginBottom: 40, lineHeight: 1.5 }}>
-            Особистий фінансовий трекер для контролю доходів і витрат
-          </p>
-          <button
-            onClick={() => setSlide(1)}
-            style={{
-              width: '100%', padding: '16px', background: '#10b981', color: '#000',
-              border: 'none', borderRadius: 16, fontSize: '1rem', fontWeight: 600,
-              cursor: 'pointer',
-            }}>
-            Почати налаштування →
-          </button>
-        </div>
-      )}
+    <div
+      style={{ height: '100dvh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', padding: '48px 24px 40px', overflow: 'hidden' }}
+      onTouchStart={e => { touchStart.current = e.targetTouches[0].clientX }}
+      onTouchEnd={e => {
+        const diff = touchStart.current - e.changedTouches[0].clientX
+        if (Math.abs(diff) > 50) { diff > 0 ? goNext() : goPrev() }
+      }}>
 
-      {slide === 1 && (
-        <div style={{ width: '100%', maxWidth: 400 }}>
-          <h2 style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 700, marginBottom: 6, textAlign: 'center' }}>
-            Ваша сфера діяльності
-          </h2>
-          <p style={{ color: '#888', fontSize: '0.875rem', marginBottom: 20, textAlign: 'center' }}>
-            Оберіть, щоб отримати відповідні категорії
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, width: '100%', marginBottom: 24 }}>
-            {ACTIVITIES.map(a => (
-              <button key={a.id} onClick={() => setSelectedActivity(a.id)}
-                style={{
-                  padding: '12px 8px', borderRadius: 12, textAlign: 'center', cursor: 'pointer',
-                  background: selectedActivity === a.id ? 'rgba(16,185,129,0.15)' : '#1a1a1a',
-                  border: `1px solid ${selectedActivity === a.id ? '#10b981' : '#2a2a2a'}`,
-                  color: '#fff', fontSize: '0.75rem', fontWeight: 500,
-                  transition: 'all 0.15s',
-                }}>
-                <div style={{ fontSize: '1.5rem', marginBottom: 4 }}>{a.icon}</div>
-                {a.label}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              onClick={() => setSlide(0)}
-              style={{
-                flex: 1, padding: '14px', background: '#1a1a1a', color: '#888',
-                border: '1px solid #2a2a2a', borderRadius: 14, fontSize: '0.9375rem',
-                fontWeight: 600, cursor: 'pointer',
-              }}>
-              ← Назад
-            </button>
-            <button
-              onClick={handleFinish}
-              disabled={!selectedActivity}
-              style={{
-                flex: 2, padding: '14px', background: selectedActivity ? '#10b981' : '#1a1a1a',
-                color: selectedActivity ? '#000' : '#555',
-                border: 'none', borderRadius: 14, fontSize: '0.9375rem',
-                fontWeight: 600, cursor: selectedActivity ? 'pointer' : 'not-allowed',
-                transition: 'all 0.15s',
-              }}>
-              Розпочати
-            </button>
-          </div>
+      {/* Skip */}
+      <div style={{ alignSelf: 'flex-end' }}>
+        {!isLast && (
+          <button onClick={finish} style={{ color: 'var(--text-muted)', fontSize: '0.875rem', background: 'none', border: 'none', cursor: 'pointer', minHeight: 'auto', padding: '4px 0' }}>
+            Пропустити
+          </button>
+        )}
+      </div>
+
+      {/* Slide content */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', overflow: 'hidden', gap: 32 }}>
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div key={current} custom={direction} variants={variants}
+            initial="enter" animate="center" exit="exit"
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28, width: '100%' }}>
+
+            <div style={{ minHeight: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {slide.isColorPicker ? (
+                <div style={{ display: 'flex', gap: 14 }}>
+                  {SCHEMES.map(s => (
+                    <button key={s.key} onClick={() => { setSelectedScheme(s.key); applyColorScheme(s.key) }}
+                      style={{
+                        width: 44, height: 44, borderRadius: '50%', background: s.color, border: 'none', cursor: 'pointer',
+                        outline: selectedScheme === s.key ? '3px solid white' : '3px solid transparent',
+                        outlineOffset: 2, transition: 'outline 0.15s', minHeight: 'auto',
+                      }} title={s.label} />
+                  ))}
+                </div>
+              ) : (
+                <SlideVisual visual={slide.visual} />
+              )}
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 10 }}>{slide.title}</h2>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>{slide.subtitle}</p>
+              {slide.hint && (
+                <p style={{ marginTop: 12, fontSize: '0.8125rem', color: 'var(--text-muted)', background: 'var(--bg-raised)', borderRadius: 8, padding: '6px 12px', display: 'inline-block' }}>{slide.hint}</p>
+              )}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Footer */}
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {SLIDES.map((_, i) => (
+            <div key={i} style={{ width: i === current ? 20 : 6, height: 6, borderRadius: 3, background: i === current ? 'var(--accent)' : 'var(--bg-raised)', transition: 'all 0.3s' }} />
+          ))}
         </div>
-      )}
+
+        <button onClick={isLast ? finish : goNext}
+          style={{ width: '100%', padding: '16px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--radius-lg)', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}>
+          {isLast ? (slide.cta || 'Розпочати →') : 'Далі'}
+        </button>
+
+        {current > 0 && !isLast && (
+          <button onClick={goPrev} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', minHeight: 'auto' }}>
+            Назад
+          </button>
+        )}
+      </div>
     </div>
   )
 }

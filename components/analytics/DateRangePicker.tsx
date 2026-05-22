@@ -2,16 +2,16 @@
 import type { Preset } from '@/lib/analytics'
 
 const PRESETS: { key: Preset; label: string }[] = [
-  { key: 'today', label: 'Сьогодні' },
-  { key: 'thisWeek', label: 'Тиждень' },
+  { key: 'today',     label: 'Сьогодні' },
+  { key: 'thisWeek',  label: 'Тиждень' },
   { key: 'thisMonth', label: 'Місяць' },
   { key: 'lastMonth', label: 'Мин. місяць' },
-  { key: 'last3m', label: '3 місяці' },
-  { key: 'last6m', label: '6 місяців' },
-  { key: 'thisYear', label: 'Рік' },
-  { key: 'lastYear', label: 'Мин. рік' },
-  { key: 'allTime', label: 'Весь час' },
-  { key: 'custom', label: 'Свій' },
+  { key: 'last3m',    label: '3 місяці' },
+  { key: 'last6m',    label: '6 місяців' },
+  { key: 'thisYear',  label: 'Рік' },
+  { key: 'lastYear',  label: 'Мин. рік' },
+  { key: 'allTime',   label: 'Весь час' },
+  { key: 'custom',    label: 'Свій' },
 ]
 
 interface Props {
@@ -25,23 +25,27 @@ interface Props {
 
 export default function DateRangePicker({ preset, onPreset, customFrom, customTo, onCustomFrom, onCustomTo }: Props) {
   return (
-    <div className="px-4 mb-4">
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+    <div style={{ padding: '0 16px', marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }} className="scrollbar-hide">
         {PRESETS.map(p => (
           <button key={p.key} onClick={() => onPreset(p.key)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-              preset === p.key ? 'bg-emerald-500 text-white' : 'bg-[#1a1a1a] text-[#888]'
-            }`}>
+            style={{
+              flexShrink: 0, padding: '6px 12px', borderRadius: 10,
+              fontSize: '0.75rem', fontWeight: 500, border: 'none', cursor: 'pointer',
+              background: preset === p.key ? 'var(--accent)' : 'var(--bg-raised)',
+              color: preset === p.key ? '#fff' : 'var(--text-secondary)',
+              transition: 'all 0.15s', minHeight: 'auto',
+            }}>
             {p.label}
           </button>
         ))}
       </div>
       {preset === 'custom' && (
-        <div className="flex gap-2 mt-3">
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
           <input type="date" value={customFrom} onChange={e => onCustomFrom(e.target.value)}
-            className="flex-1 bg-[#1a1a1a] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+            style={{ flex: 1, background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', color: '#fff', fontSize: '0.8125rem', outline: 'none' }} />
           <input type="date" value={customTo} onChange={e => onCustomTo(e.target.value)}
-            className="flex-1 bg-[#1a1a1a] rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+            style={{ flex: 1, background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', color: '#fff', fontSize: '0.8125rem', outline: 'none' }} />
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import ColorSchemeProvider from '@/components/ColorSchemeProvider'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,8 +25,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="uk" className="dark">
-      <body>{children}</body>
+    <html lang="uk">
+      <body>
+        <ColorSchemeProvider>
+          {children}
+        </ColorSchemeProvider>
+      </body>
     </html>
   )
 }

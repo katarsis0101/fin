@@ -3,9 +3,10 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import Navbar from '@/components/Navbar'
-import { Plus, Archive, Trash2, LogOut, Download, ChevronRight } from 'lucide-react'
+import { Plus, Archive, Trash2, LogOut, Download, ChevronRight, BookOpen } from 'lucide-react'
 import { exportToCSV } from '@/lib/exports'
 import type { CategoryType } from '@/lib/categories'
+import { applyColorScheme, getCurrentScheme, COLOR_SCHEMES, type ColorScheme } from '@/components/ColorSchemeProvider'
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth()
@@ -14,7 +15,12 @@ export default function SettingsPage() {
   const [newName, setNewName] = useState('')
   const [newIcon, setNewIcon] = useState('📦')
   const [adding, setAdding] = useState(false)
+  const [currentScheme, setCurrentScheme] = useState<ColorScheme>('emerald')
   const supabase = createClient()
+
+  useEffect(() => {
+    setCurrentScheme(getCurrentScheme())
+  }, [])
 
   async function loadCategories() {
     if (!user) return
@@ -53,93 +59,132 @@ export default function SettingsPage() {
     if (data) exportToCSV(data)
   }
 
+  function handleScheme(key: ColorScheme) {
+    applyColorScheme(key)
+    setCurrentScheme(key)
+  }
+
+  function resetOnboarding() {
+    localStorage.removeItem('fin_onboarding_done')
+    window.location.href = '/'
+  }
+
   const active = categories.filter(c => !c.is_archived)
   const archived = categories.filter(c => c.is_archived)
+
+  const sectionTitle: React.CSSProperties = { fontSize: '0.6875rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, padding: '0 2px' }
+  const cardBase: React.CSSProperties = { background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 8 }
 
   return (
     <div className="app-shell">
       <div className="app-content">
-        <div className="px-4 pt-6 pb-3">
-          <h1 className="text-xl font-bold text-white">Налаштування</h1>
+        <div style={{ padding: '16px 16px 12px' }}>
+          <h1 style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em' }}>Налаштування</h1>
         </div>
 
-        {/* Account */}
-        <div className="mx-4 mb-4 bg-[#111] rounded-2xl p-4">
-          <div className="flex items-center justify-between">
+        <div style={{ padding: '0 16px' }}>
+
+          {/* Profile */}
+          <p style={sectionTitle}>Профіль</p>
+          <div style={{ ...cardBase, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
             <div>
-              <div className="text-white font-medium text-sm">{user?.email}</div>
-              <div className="text-[#555] text-xs mt-0.5">Ваш акаунт</div>
+              <div style={{ color: '#fff', fontWeight: 500, fontSize: '0.9rem' }}>{user?.email}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 2 }}>Ваш акаунт</div>
             </div>
-            <button onClick={signOut} className="flex items-center gap-1.5 text-red-400 text-sm">
-              <LogOut size={16} /> Вийти
+            <button onClick={signOut} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--expense-color)', fontSize: '0.875rem', background: 'none', border: 'none', cursor: 'pointer', minHeight: 'auto' }}>
+              <LogOut size={15} /> Вийти
             </button>
           </div>
-        </div>
 
-        {/* Export */}
-        <button onClick={handleExport}
-          className="mx-4 mb-4 w-[calc(100%-32px)] bg-[#111] rounded-2xl p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Download size={18} className="text-emerald-400" />
-            <span className="text-white text-sm">Експорт CSV</span>
+          {/* Color scheme */}
+          <p style={sectionTitle}>Колірна схема</p>
+          <div style={{ ...cardBase, padding: '14px 16px', marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 14 }}>
+              {COLOR_SCHEMES.map(s => (
+                <button key={s.key} onClick={() => handleScheme(s.key as ColorScheme)}
+                  style={{
+                    width: 36, height: 36, borderRadius: '50%', background: s.accent,
+                    border: 'none', cursor: 'pointer', minHeight: 'auto',
+                    outline: currentScheme === s.key ? '2px solid #fff' : '2px solid transparent',
+                    outlineOffset: 2, transition: 'outline 0.15s',
+                  }} title={s.label} />
+              ))}
+            </div>
           </div>
-          <ChevronRight size={16} className="text-[#444]" />
-        </button>
 
-        {/* Categories */}
-        <div className="px-4">
-          <div className="flex gap-2 mb-3 bg-[#1a1a1a] rounded-2xl p-1">
+          {/* Onboarding */}
+          <p style={sectionTitle}>Навчання</p>
+          <button onClick={resetOnboarding}
+            style={{ width: '100%', ...cardBase, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+            <BookOpen size={17} color="var(--accent)" />
+            <span style={{ flex: 1, textAlign: 'left', color: '#fff', fontSize: '0.875rem' }}>Запустити онбординг</span>
+            <ChevronRight size={15} color="var(--text-muted)" />
+          </button>
+
+          {/* Export */}
+          <button onClick={handleExport}
+            style={{ width: '100%', ...cardBase, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 20 }}>
+            <Download size={17} color="var(--accent)" />
+            <span style={{ flex: 1, textAlign: 'left', color: '#fff', fontSize: '0.875rem' }}>Експорт CSV</span>
+            <ChevronRight size={15} color="var(--text-muted)" />
+          </button>
+
+          {/* Categories */}
+          <p style={sectionTitle}>Категорії</p>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 10, background: 'var(--bg-raised)', borderRadius: 12, padding: 4 }}>
             {(['expense', 'income'] as CategoryType[]).map(t => (
               <button key={t} onClick={() => setTab(t)}
-                className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                  tab === t ? 'bg-[#2a2a2a] text-white' : 'text-[#555]'
-                }`}>
+                style={{
+                  flex: 1, padding: '7px', borderRadius: 9, fontSize: '0.875rem',
+                  fontWeight: 600, border: 'none', cursor: 'pointer', minHeight: 'auto',
+                  background: tab === t ? 'var(--bg-overlay)' : 'transparent',
+                  color: tab === t ? '#fff' : 'var(--text-muted)',
+                }}>
                 {t === 'expense' ? 'Витрати' : 'Доходи'}
               </button>
             ))}
           </div>
 
-          <div className="bg-[#111] rounded-2xl overflow-hidden mb-3">
-            {active.map(cat => (
-              <div key={cat.id} className="flex items-center gap-3 px-4 py-3 border-b border-[#1a1a1a] last:border-0">
-                <span className="text-xl">{cat.icon}</span>
-                <span className="flex-1 text-white text-sm">{cat.name}</span>
-                <button onClick={() => archiveCategory(cat.id)} className="p-1.5 text-[#555] hover:text-[#888]">
-                  <Archive size={15} />
+          <div style={cardBase}>
+            {active.map((cat, i) => (
+              <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderBottom: i < active.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                <span style={{ fontSize: '1.2rem' }}>{cat.icon}</span>
+                <span style={{ flex: 1, color: '#fff', fontSize: '0.875rem' }}>{cat.name}</span>
+                <button onClick={() => archiveCategory(cat.id)} style={{ padding: 6, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', minHeight: 'auto' }}>
+                  <Archive size={14} />
                 </button>
               </div>
             ))}
 
-            {/* Add new */}
             {adding ? (
-              <div className="flex items-center gap-2 px-4 py-3 border-t border-[#1a1a1a]">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderTop: active.length > 0 ? '1px solid var(--border)' : 'none' }}>
                 <input value={newIcon} onChange={e => setNewIcon(e.target.value)}
-                  className="w-10 bg-[#2a2a2a] rounded-lg p-1 text-center text-lg focus:outline-none" />
+                  style={{ width: 36, background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: 8, padding: 4, textAlign: 'center', fontSize: '1.1rem', outline: 'none', color: '#fff' }} />
                 <input value={newName} onChange={e => setNewName(e.target.value)}
                   placeholder="Назва..." autoFocus
                   onKeyDown={e => e.key === 'Enter' && addCategory()}
-                  className="flex-1 bg-[#2a2a2a] rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none" />
-                <button onClick={addCategory} className="text-emerald-400 text-sm font-medium">Додати</button>
-                <button onClick={() => setAdding(false)} className="text-[#555] text-sm">✕</button>
+                  style={{ flex: 1, background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', color: '#fff', fontSize: '0.875rem', outline: 'none' }} />
+                <button onClick={addCategory} style={{ color: 'var(--accent)', fontSize: '0.875rem', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', minHeight: 'auto' }}>Додати</button>
+                <button onClick={() => setAdding(false)} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', minHeight: 'auto' }}>✕</button>
               </div>
             ) : (
               <button onClick={() => setAdding(true)}
-                className="w-full flex items-center gap-2 px-4 py-3 text-[#555] hover:text-white border-t border-[#1a1a1a] transition-colors">
-                <Plus size={16} /> <span className="text-sm">Додати категорію</span>
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '11px 14px', color: 'var(--text-muted)', background: 'none', border: 'none', borderTop: active.length > 0 ? '1px solid var(--border)' : 'none', cursor: 'pointer', minHeight: 'auto' }}>
+                <Plus size={15} /> <span style={{ fontSize: '0.875rem' }}>Додати категорію</span>
               </button>
             )}
           </div>
 
           {archived.length > 0 && (
-            <div className="mb-4">
-              <p className="text-[#444] text-xs uppercase tracking-wider mb-2">Архів</p>
-              <div className="bg-[#111] rounded-2xl overflow-hidden">
-                {archived.map(cat => (
-                  <div key={cat.id} className="flex items-center gap-3 px-4 py-3 border-b border-[#1a1a1a] last:border-0 opacity-50">
-                    <span className="text-xl">{cat.icon}</span>
-                    <span className="flex-1 text-white text-sm">{cat.name}</span>
-                    <button onClick={() => deleteCategory(cat.id)} className="p-1.5 text-red-500">
-                      <Trash2 size={15} />
+            <div style={{ marginTop: 12, marginBottom: 16 }}>
+              <p style={{ ...sectionTitle, marginBottom: 6 }}>Архів</p>
+              <div style={cardBase}>
+                {archived.map((cat, i) => (
+                  <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderBottom: i < archived.length - 1 ? '1px solid var(--border)' : 'none', opacity: 0.5 }}>
+                    <span style={{ fontSize: '1.2rem' }}>{cat.icon}</span>
+                    <span style={{ flex: 1, color: '#fff', fontSize: '0.875rem' }}>{cat.name}</span>
+                    <button onClick={() => deleteCategory(cat.id)} style={{ padding: 6, color: 'var(--expense-color)', background: 'none', border: 'none', cursor: 'pointer', minHeight: 'auto' }}>
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 ))}

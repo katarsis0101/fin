@@ -2,59 +2,50 @@
 import { formatUAH } from '@/lib/format'
 
 interface Row { category: string; icon?: string; amount: number; count: number; percent: number }
-
-interface Props {
-  income: Row[]
-  expense: Row[]
-}
+interface Props { income: Row[]; expense: Row[] }
 
 function Section({ rows, type }: { rows: Row[]; type: 'income' | 'expense' }) {
   const total = rows.reduce((s, r) => s + r.amount, 0)
   const totalCount = rows.reduce((s, r) => s + r.count, 0)
-
   if (!rows.length) return null
 
+  const color = type === 'income' ? 'var(--income-color)' : 'var(--expense-color)'
+
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-2 mb-2 px-4">
-        <div className={`w-2 h-2 rounded-full ${type === 'income' ? 'bg-emerald-500' : 'bg-red-500'}`} />
-        <span className="text-xs text-[#666] uppercase tracking-wider font-medium">
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, padding: '0 16px' }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
+        <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
           {type === 'income' ? 'Доходи' : 'Витрати'}
         </span>
       </div>
-      <div className="bg-[#111] rounded-2xl mx-4 overflow-hidden">
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', margin: '0 16px', overflow: 'hidden' }}>
         {rows.map((row, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-[#1a1a1a] last:border-0">
-            <span className="text-lg w-7 text-center">{row.icon || '📦'}</span>
-            <div className="flex-1 min-w-0">
-              <div className="text-white text-sm font-medium">{row.category}</div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <div className="h-1 bg-[#2a2a2a] rounded-full flex-1">
-                  <div className={`h-1 rounded-full ${type === 'income' ? 'bg-emerald-500' : 'bg-red-500'}`}
-                    style={{ width: `${row.percent}%` }} />
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: i < rows.length - 1 ? '1px solid var(--border)' : 'none' }}>
+            <span style={{ fontSize: '1.1rem', width: 26, textAlign: 'center', flexShrink: 0 }}>{row.icon || '📦'}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: '#fff', fontSize: '0.875rem', fontWeight: 500, marginBottom: 3 }}>{row.category}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ height: 3, background: 'var(--bg-overlay)', borderRadius: 2, flex: 1 }}>
+                  <div style={{ height: 3, borderRadius: 2, background: color, width: `${row.percent}%` }} />
                 </div>
-                <span className="text-[10px] text-[#555]">{row.percent.toFixed(0)}%</span>
+                <span style={{ fontSize: '0.625rem', color: 'var(--text-muted)', flexShrink: 0 }}>{row.percent.toFixed(0)}%</span>
               </div>
             </div>
-            <div className="text-right">
-              <div className={`text-sm font-semibold ${type === 'income' ? 'text-emerald-400' : 'text-red-400'}`}>
-                {formatUAH(row.amount)}
-              </div>
-              <div className="text-[10px] text-[#555]">{row.count} оп.</div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color }}>{formatUAH(row.amount)}</div>
+              <div style={{ fontSize: '0.625rem', color: 'var(--text-muted)' }}>{row.count} оп.</div>
             </div>
           </div>
         ))}
-        {/* Разом */}
-        <div className="flex items-center gap-3 px-4 py-3 bg-[#1a1a1a]">
-          <span className="text-lg w-7 text-center">∑</span>
-          <div className="flex-1">
-            <div className="text-[#888] text-sm font-medium">Разом</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--bg-raised)' }}>
+          <span style={{ fontSize: '1rem', width: 26, textAlign: 'center' }}>∑</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>Разом</div>
           </div>
-          <div className="text-right">
-            <div className={`text-sm font-bold ${type === 'income' ? 'text-emerald-400' : 'text-red-400'}`}>
-              {formatUAH(total)}
-            </div>
-            <div className="text-[10px] text-[#555]">{totalCount} оп.</div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '0.875rem', fontWeight: 700, color }}>{formatUAH(total)}</div>
+            <div style={{ fontSize: '0.625rem', color: 'var(--text-muted)' }}>{totalCount} оп.</div>
           </div>
         </div>
       </div>
@@ -64,7 +55,7 @@ function Section({ rows, type }: { rows: Row[]; type: 'income' | 'expense' }) {
 
 export default function BreakdownTable({ income, expense }: Props) {
   return (
-    <div>
+    <div style={{ paddingBottom: 8 }}>
       <Section rows={expense} type="expense" />
       <Section rows={income} type="income" />
     </div>
