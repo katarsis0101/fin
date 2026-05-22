@@ -1,9 +1,10 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useCalculator } from '@/hooks/useCalculator'
 import Navbar from '@/components/Navbar'
 import AddTransactionSheet from '@/components/AddTransactionSheet'
+import Onboarding from '@/components/Onboarding'
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration'
 import { Delete } from 'lucide-react'
 
@@ -23,15 +24,31 @@ export default function HomePage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetType, setSheetType] = useState<TransactionType>('expense')
   const [refreshKey, setRefreshKey] = useState(0)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+
+  useEffect(() => {
+    if (user && typeof window !== 'undefined') {
+      const done = localStorage.getItem('fin_onboarding_done')
+      if (!done) setShowOnboarding(true)
+    }
+  }, [user])
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 32, height: 32, border: '2px solid #10b981', borderTopColor: 'transparent', borderRadius: '50%' }}
+        className="animate-spin" />
     </div>
   )
 
+  if (showOnboarding) return (
+    <Onboarding onComplete={() => {
+      setShowOnboarding(false)
+      window.location.reload()
+    }} />
+  )
+
   function openSheet(type: TransactionType) {
-    const val = calc.evaluate()
+    calc.evaluate()
     setSheetType(type)
     setSheetOpen(true)
   }
@@ -49,8 +66,8 @@ export default function HomePage() {
     calc.pressDigit(key)
   }
 
-  const isOp = (k: string) => ['÷','×','−','+'].includes(k)
-  const isAction = (k: string) => ['C','±','%'].includes(k)
+  const isOp = (k: string) => ['÷', '×', '−', '+'].includes(k)
+  const isAction = (k: string) => ['C', '±', '%'].includes(k)
 
   return (
     <div className="app-shell">
@@ -63,7 +80,7 @@ export default function HomePage() {
             <div className="text-5xl font-light text-white tracking-tight overflow-hidden text-ellipsis whitespace-nowrap">
               {parseFloat(calc.display).toLocaleString('uk-UA', { maximumFractionDigits: 8 })}
             </div>
-            <div className="text-[#444] text-sm mt-1">₴ UAH</div>
+            <div className="text-sm mt-1" style={{ color: '#444' }}>₴ UAH</div>
           </div>
         </div>
 
@@ -72,29 +89,35 @@ export default function HomePage() {
           {KEYPAD.map((row, ri) => (
             <div key={ri} className="grid grid-cols-4 gap-2 mb-2">
               {row.map((key, ki) => {
-                // '0' appears twice in last row → span 2 on first occurrence
                 if (ri === 4 && ki === 0) {
                   return (
                     <button key="0-wide"
                       onClick={() => handleKey('0')}
-                      className="calc-btn col-span-2 bg-[#1c1c1e] text-white">
+                      className="calc-btn col-span-2"
+                      style={{ background: '#1c1c1e', color: '#fff' }}>
                       0
                     </button>
                   )
                 }
-                if (ri === 4 && ki === 1) return null // skip duplicate 0
+                if (ri === 4 && ki === 1) return null
 
-                const bg = isOp(key) && calc.op === (key === '−' ? '-' : key)
-                  ? 'bg-emerald-500 text-white'
-                  : isOp(key) ? 'bg-[#2a2a2a] text-emerald-400'
-                  : isAction(key) ? 'bg-[#2a2a2a] text-[#aaa]'
-                  : key === '⌫' ? 'bg-[#2a2a2a] text-[#aaa]'
-                  : 'bg-[#1c1c1e] text-white'
+                const isActiveOp = isOp(key) && calc.op === (key === '−' ? '-' : key)
+                const bg = isActiveOp ? '#10b981'
+                  : isOp(key) ? '#2a2a2a'
+                  : isAction(key) ? '#2a2a2a'
+                  : key === '⌫' ? '#2a2a2a'
+                  : '#1c1c1e'
+                const color = isActiveOp ? '#fff'
+                  : isOp(key) ? '#10b981'
+                  : isAction(key) ? '#aaa'
+                  : key === '⌫' ? '#aaa'
+                  : '#fff'
 
                 return (
                   <button key={`${ri}-${ki}`}
                     onClick={() => handleKey(key)}
-                    className={`calc-btn ${bg}`}>
+                    className="calc-btn"
+                    style={{ background: bg, color }}>
                     {key === '⌫' ? <Delete size={20} /> : key}
                   </button>
                 )
@@ -106,12 +129,12 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-3 mt-3">
             <button
               onClick={() => openSheet('expense')}
-              className="py-4 rounded-2xl bg-red-500 hover:bg-red-400 text-white font-bold text-base transition-colors">
+              style={{ padding: '16px', borderRadius: 16, background: '#ef4444', color: '#fff', fontWeight: 700, fontSize: '1rem', border: 'none', cursor: 'pointer' }}>
               − Витрата
             </button>
             <button
               onClick={() => openSheet('income')}
-              className="py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-base transition-colors">
+              style={{ padding: '16px', borderRadius: 16, background: '#10b981', color: '#000', fontWeight: 700, fontSize: '1rem', border: 'none', cursor: 'pointer' }}>
               + Дохід
             </button>
           </div>

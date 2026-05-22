@@ -27,12 +27,10 @@ export default function DashboardPage() {
     if (!user) return
     const { from, to } = getRangeForPreset(preset, new Date(customFrom), new Date(customTo))
 
-    supabase.from('transactions')
-      .select('*')
-      .eq('user_id', user.id)
-      .gte('created_at', from.toISOString())
-      .lte('created_at', to.toISOString())
-      .order('created_at', { ascending: true })
+    let query = supabase.from('transactions').select('*').eq('user_id', user.id)
+    if (from) query = query.gte('created_at', from.toISOString())
+    if (to)   query = query.lte('created_at', to.toISOString())
+    query.order('created_at', { ascending: true })
       .then(({ data }) => setTransactions(data || []))
 
     const prevRange = getPrevRangeForPreset(preset, new Date(customFrom), new Date(customTo))
@@ -60,7 +58,6 @@ export default function DashboardPage() {
   const { from, to } = getRangeForPreset(preset, new Date(customFrom), new Date(customTo))
   const chartData = buildChartData(transactions, from, to, groupBy)
 
-  // Breakdown
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]))
   function buildBreakdown(type: 'income' | 'expense') {
     const txs = transactions.filter(t => t.type === type)
@@ -83,8 +80,8 @@ export default function DashboardPage() {
   return (
     <div className="app-shell">
       <div className="app-content">
-        <div className="px-4 pt-6 pb-3">
-          <h1 className="text-xl font-bold text-white">Аналітика</h1>
+        <div className="px-4 pt-4 pb-3">
+          <h1 style={{ color: '#fff', fontSize: '1.25rem', fontWeight: 700 }}>Аналітика</h1>
         </div>
 
         <DateRangePicker

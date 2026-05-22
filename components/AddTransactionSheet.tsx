@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { Drawer } from 'vaul'
-import { X, Camera } from 'lucide-react'
+import { X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Category } from '@/lib/categories'
 import { toISODate } from '@/lib/format'
@@ -47,7 +47,7 @@ export default function AddTransactionSheet({ open, onClose, onSaved, userId, am
         setCategories(data || [])
         setSelectedCategory('')
       })
-  }, [userId, type])
+  }, [userId, type, open])
 
   async function handleSave() {
     if (!selectedCategory || amount <= 0) return
@@ -70,76 +70,106 @@ export default function AddTransactionSheet({ open, onClose, onSaved, userId, am
   return (
     <Drawer.Root open={open} onOpenChange={v => !v && onClose()} shouldScaleBackground>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/60 z-40" />
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-[#111] rounded-t-3xl max-h-[85vh] flex flex-col max-w-[480px] mx-auto">
-          <div className="w-10 h-1 bg-[#333] rounded-full mx-auto mt-3 mb-4" />
+        <Drawer.Overlay style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 40 }} />
+        <Drawer.Content style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+          background: '#111', borderRadius: '24px 24px 0 0',
+          maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+          maxWidth: 480, margin: '0 auto',
+        }}>
+          <div style={{ width: 40, height: 4, background: '#333', borderRadius: 2, margin: '12px auto 16px' }} />
 
           {/* Header */}
-          <div className="flex items-center justify-between px-5 mb-4">
-            <div className="text-2xl font-bold text-white">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', marginBottom: 12 }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff' }}>
               {amount > 0 ? `${amount.toLocaleString('uk-UA')} ₴` : 'Введіть суму'}
             </div>
-            <button onClick={onClose} className="p-2 text-[#666] hover:text-white">
+            <button onClick={onClose} style={{ padding: 8, color: '#666', background: 'none', border: 'none', cursor: 'pointer', minHeight: 'auto' }}>
               <X size={20} />
             </button>
           </div>
 
           {/* Type toggle */}
-          <div className="flex mx-5 mb-4 bg-[#1a1a1a] rounded-2xl p-1">
+          <div style={{ display: 'flex', margin: '0 20px', marginBottom: 12, background: '#1a1a1a', borderRadius: 16, padding: 4 }}>
             {(['expense', 'income'] as const).map(t => (
               <button key={t} onClick={() => setType(t)}
-                className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                  type === t
-                    ? t === 'expense' ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'
-                    : 'text-[#666]'
-                }`}>
+                style={{
+                  flex: 1, padding: '8px', borderRadius: 12, fontSize: '0.875rem',
+                  fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                  background: type === t ? (t === 'expense' ? '#ef4444' : '#10b981') : 'transparent',
+                  color: type === t ? (t === 'expense' ? '#fff' : '#000') : '#666',
+                  minHeight: 'auto',
+                }}>
                 {t === 'expense' ? 'Витрата' : 'Дохід'}
               </button>
             ))}
           </div>
 
           {/* Categories */}
-          <div className="flex-1 overflow-y-auto px-5">
-            <p className="text-[#666] text-xs font-medium mb-2 uppercase tracking-wider">Категорія</p>
-            <div className="grid grid-cols-4 gap-2 mb-4">
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px' }}>
+            <p style={{ color: '#666', fontSize: '0.75rem', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Категорія
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 12 }}>
               {categories.map(cat => (
                 <button key={cat.id} onClick={() => setSelectedCategory(cat.id)}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-2xl transition-colors ${
-                    selectedCategory === cat.id ? 'bg-[#2a2a2a] ring-2 ring-emerald-500' : 'bg-[#1a1a1a]'
-                  }`}>
-                  <span className="text-xl">{cat.icon}</span>
-                  <span className="text-[10px] text-[#aaa] text-center leading-tight">{cat.name}</span>
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    padding: '8px 4px', borderRadius: 12, border: 'none', cursor: 'pointer',
+                    background: selectedCategory === cat.id ? '#2a2a2a' : '#1a1a1a',
+                    outline: selectedCategory === cat.id ? '2px solid #10b981' : 'none',
+                    transition: 'all 0.12s', minHeight: 'auto',
+                  }}>
+                  <span style={{ fontSize: '1.125rem' }}>{cat.icon}</span>
+                  <span style={{ fontSize: '0.6875rem', color: '#aaa', textAlign: 'center', lineHeight: 1.2 }}>{cat.name}</span>
                 </button>
               ))}
             </div>
 
             {/* Comment */}
-            <p className="text-[#666] text-xs font-medium mb-2 uppercase tracking-wider">Коментар</p>
+            <p style={{ color: '#666', fontSize: '0.75rem', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Коментар
+            </p>
             <input
               value={comment}
               onChange={e => setComment(e.target.value)}
               placeholder="Необов'язково..."
-              className="w-full bg-[#1a1a1a] rounded-2xl px-4 py-3 text-white placeholder-[#444] focus:outline-none focus:ring-1 focus:ring-emerald-500 mb-4 text-sm"
+              style={{
+                width: '100%', background: '#1a1a1a', borderRadius: 16, padding: '12px 16px',
+                color: '#fff', fontSize: '0.875rem', outline: 'none', border: '1px solid transparent',
+                marginBottom: 12,
+              }}
             />
 
             {/* Date */}
-            <p className="text-[#666] text-xs font-medium mb-2 uppercase tracking-wider">Дата</p>
+            <p style={{ color: '#666', fontSize: '0.75rem', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Дата
+            </p>
             <input
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
-              className="w-full bg-[#1a1a1a] rounded-2xl px-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 mb-6 text-sm"
+              style={{
+                width: '100%', background: '#1a1a1a', borderRadius: 16, padding: '12px 16px',
+                color: '#fff', fontSize: '0.875rem', outline: 'none', border: '1px solid transparent',
+                marginBottom: 20,
+              }}
             />
           </div>
 
           {/* Save */}
-          <div className="px-5 pb-6 pt-2">
+          <div style={{ padding: '8px 20px 24px' }}>
             <button
               onClick={handleSave}
               disabled={!selectedCategory || amount <= 0 || saving}
-              className={`w-full py-4 rounded-2xl font-bold text-white text-base transition-colors disabled:opacity-40 ${
-                type === 'expense' ? 'bg-red-500 hover:bg-red-400' : 'bg-emerald-500 hover:bg-emerald-400'
-              }`}>
+              style={{
+                width: '100%', padding: '16px', borderRadius: 16, fontWeight: 700,
+                fontSize: '1rem', border: 'none', cursor: !selectedCategory || amount <= 0 || saving ? 'not-allowed' : 'pointer',
+                opacity: !selectedCategory || amount <= 0 || saving ? 0.4 : 1,
+                background: type === 'expense' ? '#ef4444' : '#10b981',
+                color: type === 'expense' ? '#fff' : '#000',
+                transition: 'opacity 0.15s',
+              }}>
               {saving ? 'Збереження...' : type === 'expense' ? 'Додати витрату' : 'Додати дохід'}
             </button>
           </div>

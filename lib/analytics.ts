@@ -8,7 +8,7 @@ export type Preset = 'today' | 'thisWeek' | 'thisMonth' | 'lastMonth' |
 
 export type GroupBy = 'day' | 'week' | 'month' | 'year'
 
-export function getRangeForPreset(preset: Preset, customFrom?: Date, customTo?: Date): { from: Date; to: Date } {
+export function getRangeForPreset(preset: Preset, customFrom?: Date, customTo?: Date): { from: Date | null; to: Date | null } {
   const now = new Date()
   switch (preset) {
     case 'today': return { from: startOfDay(now), to: endOfDay(now) }
@@ -19,7 +19,7 @@ export function getRangeForPreset(preset: Preset, customFrom?: Date, customTo?: 
     case 'last6m': return { from: startOfMonth(subMonths(now, 5)), to: endOfMonth(now) }
     case 'thisYear': return { from: startOfYear(now), to: endOfYear(now) }
     case 'lastYear': { const ly = subYears(now, 1); return { from: startOfYear(ly), to: endOfYear(ly) } }
-    case 'allTime': return { from: new Date('2020-01-01'), to: endOfDay(now) }
+    case 'allTime': return { from: null, to: null }
     case 'custom': return { from: customFrom ?? startOfMonth(now), to: customTo ?? endOfDay(now) }
   }
 }
@@ -43,9 +43,25 @@ export interface ChartPoint { label: string; income: number; expense: number }
 
 export function buildChartData(
   transactions: { created_at: string; type: string; amount: number }[],
-  from: Date, to: Date, groupBy: GroupBy
+  from: Date | null, to: Date | null, groupBy: GroupBy
 ): ChartPoint[] {
   const points: ChartPoint[] = []
+
+  if (!from || !to) {
+    // allTime: group by month based on actual transaction dates
+    const monthMap = new Map<string, ChartPoint>()
+    transactions.forEach(t => {
+      const monthStr = t.created_at.substring(0, 7)
+      if (!monthMap.has(monthStr)) {
+        const d = new Date(monthStr + '-01')
+        monthMap.set(monthStr, { label: format(d, 'MMM yyyy', { locale: uk }), income: 0, expense: 0 })
+      }
+      const pt = monthMap.get(monthStr)!
+      if (t.type === 'income') pt.income += Number(t.amount)
+      else pt.expense += Number(t.amount)
+    })
+    return Array.from(monthMap.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([, v]) => v)
+  }
 
   if (groupBy === 'day') {
     eachDayOfInterval({ start: from, end: to }).forEach(day => {
